@@ -83,6 +83,7 @@ const App = () => {
   const [voterName, setVoterName] = useState('');
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // 新行程表單
   const [newTrip, setNewTrip] = useState({ name: '', location: '', startDate: '', endDate: '' });
@@ -169,13 +170,21 @@ const App = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
+    setUploadProgress(0);
     const reader = new FileReader();
+    reader.onprogress = (ev) => {
+      if (ev.lengthComputable) {
+        setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+      }
+    };
     reader.onloadend = () => {
+      setUploadProgress(100);
       setNewPost(prev => ({ ...prev, imgUrl: reader.result as string }));
       setIsUploading(false);
     };
     reader.onerror = () => {
       setIsUploading(false);
+      setUploadProgress(0);
     };
     reader.readAsDataURL(file);
   };
@@ -503,9 +512,12 @@ const App = () => {
                 <label className="text-[10px] font-black text-[#A19183] uppercase tracking-widest block mb-3">上傳圖片 (可選)</label>
                 <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8D5C4] rounded-2xl bg-[#FFFBF7] hover:bg-[#F5EFE6] transition-colors overflow-hidden ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
                   {isUploading ? (
-                    <div className="flex flex-col items-center gap-2 text-[#A19183]">
+                    <div className="flex flex-col items-center gap-2 text-[#A19183] w-full px-6">
                       <div className="w-8 h-8 border-3 border-[#E8D5C4] border-t-[#B91C1C] rounded-full animate-spin"></div>
-                      <span className="text-xs font-bold">上傳中...</span>
+                      <span className="text-xs font-bold">上傳中 {uploadProgress}%</span>
+                      <div className="w-full bg-[#E8D5C4] rounded-full h-2 overflow-hidden">
+                        <div className="bg-[#B91C1C] h-full rounded-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }}></div>
+                      </div>
                     </div>
                   ) : newPost.imgUrl ? (
                     <img src={newPost.imgUrl} alt="預覽" className="w-full h-full object-cover" />
