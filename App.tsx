@@ -84,30 +84,40 @@ const App = () => {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingText, setLoadingText] = useState('載入中...');
 
   // 新行程表單
   const [newTrip, setNewTrip] = useState({ name: '', location: '', startDate: '', endDate: '' });
   // 新項目表單
   const [newPost, setNewPost] = useState({ category: '住宿', title: '', location: '', description: '', imgUrl: '', linkUrl: '' });
 
-  // --- Firestore 即時監聽 ---
+  // --- Firestore 即時監聯 ---
   useEffect(() => {
+    let tripsLoaded = false;
+    let postsLoaded = false;
+    const checkLoaded = () => {
+      if (tripsLoaded && postsLoaded) setIsLoading(false);
+    };
+
     const unsubTrips = onSnapshot(collection(db, 'trips'), (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Trip));
       setTrips(data);
       if (data.length > 0 && !selectedTripId) {
         setSelectedTripId(data[0].id);
       }
+      tripsLoaded = true;
+      checkLoaded();
     });
-    return () => unsubTrips();
-  }, []);
 
-  useEffect(() => {
     const unsubPosts = onSnapshot(collection(db, 'posts'), (snapshot) => {
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as PostItem));
       setPosts(data);
+      postsLoaded = true;
+      checkLoaded();
     });
-    return () => unsubPosts();
+
+    return () => { unsubTrips(); unsubPosts(); };
   }, []);
 
   const currentTrip = trips.find(t => t.id === selectedTripId);
@@ -121,6 +131,8 @@ const App = () => {
   // --- 邏輯操作 ---
   const handleAddTrip = async () => {
     if (!newTrip.name || !newTrip.location) return;
+    setIsLoading(true);
+    setLoadingText('建立行程中...');
     try {
       const docRef = await addDoc(collection(db, 'trips'), {
         name: newTrip.name,
@@ -133,17 +145,20 @@ const App = () => {
       console.error('Firestore 寫入錯誤:', err);
       alert('寫入失敗，請檢查 Firestore 安全規則是否已設為允許讀寫。\n\n錯誤: ' + (err as Error).message);
     }
+    setIsLoading(false);
     setIsTripModalOpen(false);
     setNewTrip({ name: '', location: '', startDate: '', endDate: '' });
   };
 
   const handleDeleteTrip = async (id: string) => {
+    setIsLoading(true);
+    setLoadingText('刪除行程中...');
     await deleteDoc(doc(db, 'trips', id));
-    // 刪除該行程下的所有討論
     const q = query(collection(db, 'posts'), where('tripId', '==', id));
     const snapshot = await getDocs(q);
     snapshot.docs.forEach(d => deleteDoc(doc(db, 'posts', d.id)));
     if (selectedTripId === id) setSelectedTripId(null);
+    setIsLoading(false);
   };
 
   const handleOpenPostModal = (postId?: string) => {
@@ -191,6 +206,8 @@ const App = () => {
 
   const handleSavePost = async () => {
     if (!newPost.title) return;
+    setIsLoading(true);
+    setLoadingText(editingPostId ? '儲存變更中...' : '發布建議中...');
     if (editingPostId) {
       await updateDoc(doc(db, 'posts', editingPostId), {
         category: newPost.category,
@@ -212,21 +229,28 @@ const App = () => {
         votes: [],
       });
     }
+    setIsLoading(false);
     handleClosePostModal();
   };
 
   const handleDeletePost = async (id: string) => {
+    setIsLoading(true);
+    setLoadingText('刪除中...');
     await deleteDoc(doc(db, 'posts', id));
+    setIsLoading(false);
   };
 
   const handleVote = async () => {
     if (!voterName || !votingPostId) return;
+    setIsLoading(true);
+    setLoadingText('投票中...');
     const post = posts.find(p => p.id === votingPostId);
     if (post && !post.votes.includes(voterName)) {
       await updateDoc(doc(db, 'posts', votingPostId), {
         votes: arrayUnion(voterName),
       });
     }
+    setIsLoading(false);
     setIsVoteModalOpen(false);
     setVoterName('');
   };
@@ -571,6 +595,16 @@ const App = () => {
               <button onClick={handleVote} className="w-full py-4 bg-[#B91C1C] text-white rounded-2xl font-black text-sm shadow-xl shadow-red-100 active:scale-95 transition-all">投下神聖一票</button>
               <button onClick={() => { setIsVoteModalOpen(false); setVoterName(''); }} className="w-full py-2 text-[#A19183] font-bold text-xs">取消</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- 全螢幕 Loading 遮罩 --- */}
+      {isLoading && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-[2rem] p-8 shadow-2xl flex flex-col items-center gap-4 min-w-[200px]">
+            <div className="w-12 h-12 border-4 border-[#E8D5C4] border-t-[#B91C1C] rounded-full animate-spin"></div>
+            <span className="text-sm font-bold text-[#4A3E3E]">{loadingText}</span>
           </div>
         </div>
       )}
