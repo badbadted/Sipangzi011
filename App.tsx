@@ -129,11 +129,12 @@ const App = () => {
         endDate: newTrip.endDate,
       });
       setSelectedTripId(docRef.id);
-      setIsTripModalOpen(false);
-      setNewTrip({ name: '', location: '', startDate: '', endDate: '' });
     } catch (err) {
-      // silent
+      console.error('Firestore 寫入錯誤:', err);
+      alert('寫入失敗，請檢查 Firestore 安全規則是否已設為允許讀寫。\n\n錯誤: ' + (err as Error).message);
     }
+    setIsTripModalOpen(false);
+    setNewTrip({ name: '', location: '', startDate: '', endDate: '' });
   };
 
   const handleDeleteTrip = async (id: string) => {
