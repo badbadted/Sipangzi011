@@ -186,16 +186,40 @@ const App = () => {
     if (!file) return;
     setIsUploading(true);
     setUploadProgress(0);
+
     const reader = new FileReader();
     reader.onprogress = (ev) => {
       if (ev.lengthComputable) {
-        setUploadProgress(Math.round((ev.loaded / ev.total) * 100));
+        setUploadProgress(Math.round((ev.loaded / ev.total) * 50));
       }
     };
     reader.onloadend = () => {
-      setUploadProgress(100);
-      setNewPost(prev => ({ ...prev, imgUrl: reader.result as string }));
-      setIsUploading(false);
+      setUploadProgress(60);
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1200;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / width, MAX_DIM / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+        setUploadProgress(80);
+        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+        setUploadProgress(100);
+        setNewPost(prev => ({ ...prev, imgUrl: compressed }));
+        setIsUploading(false);
+      };
+      img.onerror = () => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      };
+      img.src = reader.result as string;
     };
     reader.onerror = () => {
       setIsUploading(false);
@@ -206,31 +230,33 @@ const App = () => {
 
   const handleSavePost = async () => {
     if (!newPost.title) return;
+    const isEditing = editingPostId;
+    const postData = { ...newPost };
+    handleClosePostModal();
     setIsLoading(true);
-    setLoadingText(editingPostId ? '儲存變更中...' : '發布建議中...');
-    if (editingPostId) {
-      await updateDoc(doc(db, 'posts', editingPostId), {
-        category: newPost.category,
-        title: newPost.title,
-        location: newPost.location,
-        description: newPost.description,
-        imgUrl: newPost.imgUrl,
-        linkUrl: newPost.linkUrl,
+    setLoadingText(isEditing ? '儲存變更中...' : '發布建議中...');
+    if (isEditing) {
+      await updateDoc(doc(db, 'posts', isEditing), {
+        category: postData.category,
+        title: postData.title,
+        location: postData.location,
+        description: postData.description,
+        imgUrl: postData.imgUrl,
+        linkUrl: postData.linkUrl,
       });
     } else {
       await addDoc(collection(db, 'posts'), {
         tripId: selectedTripId,
-        category: newPost.category,
-        title: newPost.title,
-        location: newPost.location,
-        description: newPost.description,
-        imgUrl: newPost.imgUrl,
-        linkUrl: newPost.linkUrl,
+        category: postData.category,
+        title: postData.title,
+        location: postData.location,
+        description: postData.description,
+        imgUrl: postData.imgUrl,
+        linkUrl: postData.linkUrl,
         votes: [],
       });
     }
     setIsLoading(false);
-    handleClosePostModal();
   };
 
   const handleDeletePost = async (id: string) => {
