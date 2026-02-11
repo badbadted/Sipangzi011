@@ -29,7 +29,9 @@ import {
   Heart,
   Pencil,
   ImageIcon,
-  ExternalLink
+  ExternalLink,
+  ChevronDown,
+  GripVertical
 } from 'lucide-react';
 
 // --- 和風裝飾組件 ---
@@ -67,6 +69,7 @@ interface PostItem {
   imgUrl: string;
   linkUrl: string;
   votes: string[];
+  createdAt: number;
 }
 
 const App = () => {
@@ -86,6 +89,9 @@ const App = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingText, setLoadingText] = useState('載入中...');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [categoryOrder, setCategoryOrder] = useState(['住宿', '飲食', '交通', '景點']);
+  const [draggedCat, setDraggedCat] = useState<string | null>(null);
 
   // 新行程表單
   const [newTrip, setNewTrip] = useState({ name: '', location: '', startDate: '', endDate: '' });
@@ -123,9 +129,13 @@ const App = () => {
   const currentTrip = trips.find(t => t.id === selectedTripId);
   const currentPosts = posts.filter(p => p.tripId === selectedTripId);
 
-  // --- 排序邏輯 (依票數排序) ---
+  // --- 排序邏輯 (依票數排序，票數相同依建立時間新→舊) ---
   const sortedPosts = useMemo(() => {
-    return [...currentPosts].sort((a, b) => (b.votes?.length || 0) - (a.votes?.length || 0));
+    return [...currentPosts].sort((a, b) => {
+      const voteDiff = (b.votes?.length || 0) - (a.votes?.length || 0);
+      if (voteDiff !== 0) return voteDiff;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
   }, [currentPosts]);
 
   // --- 邏輯操作 ---
@@ -170,7 +180,9 @@ const App = () => {
       }
     } else {
       setEditingPostId(null);
-      setNewPost({ category: '住宿', title: '', location: '', description: '', imgUrl: '', linkUrl: '' });
+      const latestPost = [...currentPosts].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+      const defaultCategory = latestPost?.category || categoryOrder[0];
+      setNewPost({ category: defaultCategory, title: '', location: '', description: '', imgUrl: '', linkUrl: '' });
     }
     setIsPostModalOpen(true);
   };
@@ -178,7 +190,7 @@ const App = () => {
   const handleClosePostModal = () => {
     setIsPostModalOpen(false);
     setEditingPostId(null);
-    setNewPost({ category: '住宿', title: '', location: '', description: '', imgUrl: '', linkUrl: '' });
+    setNewPost({ category: categoryOrder[0], title: '', location: '', description: '', imgUrl: '', linkUrl: '' });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,6 +266,7 @@ const App = () => {
         imgUrl: postData.imgUrl,
         linkUrl: postData.linkUrl,
         votes: [],
+        createdAt: Date.now(),
       });
     }
     setIsLoading(false);
@@ -285,8 +298,8 @@ const App = () => {
     <div className="min-h-screen bg-[#FDF6F0] text-gray-800 font-sans relative overflow-hidden flex flex-col md:flex-row">
       <JapanesePattern />
 
-      {/* Sidebar: 行程導航 */}
-      <aside className="w-full md:w-72 bg-[#FFFBF7] border-r border-[#E8D5C4] z-10 flex flex-col shadow-md">
+      {/* Sidebar: 行程導航 — 桌面版 */}
+      <aside className="hidden md:flex w-72 bg-[#FFFBF7] border-r border-[#E8D5C4] z-10 flex-col shadow-md">
         <div className="p-6 border-b border-[#E8D5C4] bg-gradient-to-b from-white to-[#FFFBF7] text-center">
           <h1 className="text-xl font-black text-[#B91C1C] flex items-center justify-center gap-2">
             <span className="text-2xl">⛩️</span> 來去走走一下
@@ -345,35 +358,166 @@ const App = () => {
         </div>
       </aside>
 
+      {/* Sidebar: 行程導航 — 手機版頂部可收合抽屜 */}
+      <div className="md:hidden z-20 relative">
+        {/* 摘要列 */}
+        <button
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="w-full flex items-center justify-between px-5 py-3.5 bg-[#FFFBF7] border-b border-[#E8D5C4] shadow-sm"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="text-lg">⛩️</span>
+            <span className="text-sm font-black text-[#4A3E3E] truncate">
+              {currentTrip ? currentTrip.name : '選擇行程'}
+            </span>
+            {currentTrip && (
+              <span className="text-[10px] text-[#A19183] flex items-center gap-0.5 flex-shrink-0">
+                <MapPin className="w-2.5 h-2.5" />{currentTrip.location}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span
+              onClick={(e) => { e.stopPropagation(); setIsTripModalOpen(true); }}
+              className="p-1.5 hover:bg-[#F5EFE6] rounded-full text-[#B91C1C] transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+            </span>
+            <ChevronDown className={`w-4 h-4 text-[#8C7A6B] transition-transform duration-300 ${isSidebarOpen ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        {/* 展開抽屜 */}
+        {isSidebarOpen && (
+          <>
+            {/* 背景遮罩 */}
+            <div
+              className="fixed inset-0 bg-black/30 z-10"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+            {/* 抽屜內容 */}
+            <div className="absolute top-full left-0 right-0 bg-[#FFFBF7] border-b border-[#E8D5C4] shadow-xl z-20 max-h-[70vh] overflow-y-auto">
+              <div className="p-4 space-y-3">
+                <div className="flex justify-between items-center mb-2 px-2">
+                  <span className="text-xs font-bold text-[#8C7A6B] uppercase tracking-widest">我的行程</span>
+                </div>
+                {trips.map(trip => (
+                  <div key={trip.id} className="relative group">
+                    <button
+                      onClick={() => { setSelectedTripId(trip.id); setIsSidebarOpen(false); }}
+                      className={`w-full text-left p-3 rounded-2xl transition-all flex items-center gap-3 ${
+                        selectedTripId === trip.id
+                          ? 'bg-[#FFEDED] text-[#B91C1C] shadow-sm ring-1 ring-[#FFD1D1]'
+                          : 'hover:bg-[#F5EFE6] text-gray-600'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-xl ${selectedTripId === trip.id ? 'bg-white shadow-inner' : 'bg-gray-100'}`}>
+                        <Palmtree className="w-4 h-4" />
+                      </div>
+                      <div className="truncate flex-1">
+                        <div className="text-sm font-bold">{trip.name}</div>
+                        <div className="text-[10px] opacity-60 flex items-center gap-1 mt-0.5"><MapPin className="w-2 h-2"/>{trip.location}</div>
+                      </div>
+                      {selectedTripId === trip.id && <Check className="w-4 h-4 text-[#B91C1C] flex-shrink-0" />}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteTrip(trip.id)}
+                      className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-2 text-red-300 hover:text-red-500 transition-all"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {trips.length === 0 && (
+                  <p className="text-center text-sm text-[#A19183] py-6">尚無行程，點擊 + 建立</p>
+                )}
+              </div>
+
+              <div className="p-4 bg-gradient-to-br from-[#F5EFE6] to-[#FFEDED]/30 m-4 mt-0 rounded-3xl space-y-2.5 border border-[#E8D5C4]/50">
+                <div className="flex items-center justify-between text-[10px] font-bold text-[#8C7A6B]">
+                  <span className="flex items-center gap-1.5"><Palmtree className="w-3 h-3 text-[#B91C1C]/60" />行程數</span>
+                  <span className="bg-white px-2.5 py-0.5 rounded-full text-[#B91C1C] font-black shadow-sm">{trips.length}</span>
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-bold text-[#8C7A6B]">
+                  <span className="flex items-center gap-1.5"><BarChart3 className="w-3 h-3 text-[#B91C1C]/60" />討論項目</span>
+                  <span className="bg-white px-2.5 py-0.5 rounded-full text-[#B91C1C] font-black shadow-sm">{posts.length}</span>
+                </div>
+                <div className="flex items-center justify-between text-[10px] font-bold text-[#8C7A6B]">
+                  <span className="flex items-center gap-1.5"><Heart className="w-3 h-3 text-[#B91C1C]/60" />總投票數</span>
+                  <span className="bg-white px-2.5 py-0.5 rounded-full text-[#B91C1C] font-black shadow-sm">{posts.reduce((sum, p) => sum + (p.votes?.length || 0), 0)}</span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen relative z-10 overflow-hidden">
+      <main className="flex-1 flex flex-col min-h-0 md:h-screen relative z-10 overflow-hidden">
         {currentTrip ? (
           <>
-            <header className="bg-gradient-to-r from-white/90 to-[#FFFBF7]/90 backdrop-blur-lg p-4 md:p-6 border-b border-[#E8D5C4]/60 flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-black text-[#4A3E3E] flex items-center gap-3">
-                  {currentTrip.name}
-                  <span className="text-[10px] bg-gradient-to-r from-[#E8F3E8] to-[#D4EDDA] text-[#2D5A27] px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm">Active</span>
+            <header className="bg-gradient-to-r from-white/90 to-[#FFFBF7]/90 backdrop-blur-lg p-4 md:p-6 border-b border-[#E8D5C4]/60 flex justify-between items-center gap-3">
+              <div className="min-w-0">
+                <h2 className="text-lg md:text-2xl font-black text-[#4A3E3E] flex items-center gap-2 md:gap-3">
+                  <span className="truncate">{currentTrip.name}</span>
+                  <span className="hidden md:inline text-[10px] bg-gradient-to-r from-[#E8F3E8] to-[#D4EDDA] text-[#2D5A27] px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm flex-shrink-0">Active</span>
                 </h2>
-                <div className="flex items-center gap-4 mt-1.5 text-xs text-[#8C7A6B] font-medium">
+                <div className="flex items-center gap-2 md:gap-4 mt-1 md:mt-1.5 text-[10px] md:text-xs text-[#8C7A6B] font-medium">
                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {currentTrip.location}</span>
                   <span className="flex items-center gap-1"><Calendar className="w-3 h-3"/> {currentTrip.startDate} ~ {currentTrip.endDate}</span>
                 </div>
               </div>
               <button
                 onClick={() => handleOpenPostModal()}
-                className="bg-gradient-to-r from-[#B91C1C] to-[#DC2626] text-white px-6 py-2.5 rounded-full text-sm font-black flex items-center gap-2 shadow-lg shadow-red-200/60 hover:shadow-xl hover:shadow-red-300/60 hover:from-[#991B1B] hover:to-[#B91C1C] transition-all active:scale-95"
+                className="bg-gradient-to-r from-[#B91C1C] to-[#DC2626] text-white rounded-full font-black flex items-center justify-center shadow-lg shadow-red-200/60 hover:shadow-xl hover:shadow-red-300/60 hover:from-[#991B1B] hover:to-[#B91C1C] transition-all active:scale-95 w-10 h-10 md:w-auto md:h-auto md:px-6 md:py-2.5 text-sm gap-2 flex-shrink-0"
               >
-                <Plus className="w-4 h-4" /> 新增討論
+                <Plus className="w-4 h-4" />
+                <span className="hidden md:inline">新增討論</span>
               </button>
             </header>
 
             <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-12 pb-24">
-              {['住宿', '飲食', '交通', '景點'].map(cat => {
+              {categoryOrder.map(cat => {
                 const items = sortedPosts.filter(p => p.category === cat);
                 return (
-                  <section key={cat}>
-                    <div className="flex items-center gap-3 mb-6">
+                  <section
+                    key={cat}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedCat(cat);
+                      e.dataTransfer.effectAllowed = 'move';
+                      if (e.currentTarget instanceof HTMLElement) {
+                        e.currentTarget.style.opacity = '0.5';
+                      }
+                    }}
+                    onDragEnd={(e) => {
+                      setDraggedCat(null);
+                      if (e.currentTarget instanceof HTMLElement) {
+                        e.currentTarget.style.opacity = '1';
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (!draggedCat || draggedCat === cat) return;
+                      setCategoryOrder(prev => {
+                        const newOrder = [...prev];
+                        const fromIdx = newOrder.indexOf(draggedCat);
+                        const toIdx = newOrder.indexOf(cat);
+                        newOrder.splice(fromIdx, 1);
+                        newOrder.splice(toIdx, 0, draggedCat);
+                        return newOrder;
+                      });
+                    }}
+                    className={`transition-all duration-200 ${draggedCat && draggedCat !== cat ? 'border-t-2 border-dashed border-[#E8D5C4]' : ''}`}
+                  >
+                    <div className="flex items-center gap-3 mb-6 group/cat">
+                      <div className="cursor-grab active:cursor-grabbing text-[#E8D5C4] hover:text-[#B91C1C] transition-colors opacity-0 group-hover/cat:opacity-100">
+                        <GripVertical className="w-4 h-4" />
+                      </div>
                       <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FFEDED] to-[#FFD1D1]/40 text-[#B91C1C] flex items-center justify-center shadow-sm border border-white">
                         <CategoryIcon type={cat} />
                       </div>
@@ -386,7 +530,7 @@ const App = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {items.map(post => (
                           <div key={post.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-[#E8D5C4]/80 group hover:shadow-2xl hover:shadow-[#E8D5C4]/30 hover:-translate-y-1.5 transition-all duration-300">
-                            <div className="h-44 bg-gradient-to-br from-[#F5EFE6] to-[#FFEDED]/30 relative overflow-hidden">
+                            <div className="h-36 md:h-44 bg-gradient-to-br from-[#F5EFE6] to-[#FFEDED]/30 relative overflow-hidden">
                               <img
                                 src={post.imgUrl || `https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=400`}
                                 alt={post.title}
@@ -478,7 +622,10 @@ const App = () => {
               <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-[#B91C1C]/20 to-transparent rounded-full"></div>
             </div>
             <h2 className="text-2xl font-black text-[#4A3E3E] mb-3 tracking-tighter">開始規劃你的旅行冒險</h2>
-            <p className="max-w-sm text-sm leading-relaxed mb-10 text-[#8C7A6B]">請在左側選擇一個旅程，或點擊下方按鈕建立新的探索計畫。</p>
+            <p className="max-w-sm text-sm leading-relaxed mb-10 text-[#8C7A6B]">
+              <span className="hidden md:inline">請在左側選擇一個旅程，或點擊下方按鈕建立新的探索計畫。</span>
+              <span className="md:hidden">請點擊上方選擇行程，或點擊下方按鈕建立新的探索計畫。</span>
+            </p>
             <button
                 onClick={() => setIsTripModalOpen(true)}
                 className="px-8 py-4 bg-gradient-to-r from-[#B91C1C] to-[#DC2626] text-white rounded-full font-black shadow-2xl shadow-red-200/60 flex items-center gap-3 hover:scale-105 hover:shadow-red-300/60 transition-all"
@@ -551,7 +698,7 @@ const App = () => {
               <div>
                 <label className="text-[10px] font-black text-[#A19183] uppercase tracking-widest block mb-2">分類</label>
                 <div className="grid grid-cols-4 gap-3">
-                  {['住宿', '飲食', '交通', '景點'].map(cat => (
+                  {categoryOrder.map(cat => (
                     <button
                       key={cat}
                       onClick={() => setNewPost({...newPost, category: cat})}
