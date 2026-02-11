@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { db } from './firebase';
+import { db, storage } from './firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   collection,
   addDoc,
@@ -82,6 +83,7 @@ const App = () => {
   const [votingPostId, setVotingPostId] = useState<string | null>(null);
   const [voterName, setVoterName] = useState('');
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // 新行程表單
   const [newTrip, setNewTrip] = useState({ name: '', location: '', startDate: '', endDate: '' });
@@ -163,14 +165,19 @@ const App = () => {
     setNewPost({ category: '住宿', title: '', location: '', description: '', imgUrl: '', linkUrl: '' });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setNewPost(prev => ({ ...prev, imgUrl: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
+    setIsUploading(true);
+    try {
+      const storageRef = ref(storage, `images/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      setNewPost(prev => ({ ...prev, imgUrl: url }));
+    } catch (err) {
+      // silent
+    }
+    setIsUploading(false);
   };
 
   const handleSavePost = async () => {
@@ -494,8 +501,13 @@ const App = () => {
               </div>
               <div>
                 <label className="text-[10px] font-black text-[#A19183] uppercase tracking-widest block mb-3">上傳圖片 (可選)</label>
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8D5C4] rounded-2xl cursor-pointer bg-[#FFFBF7] hover:bg-[#F5EFE6] transition-colors overflow-hidden">
-                  {newPost.imgUrl ? (
+                <label className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-[#E8D5C4] rounded-2xl bg-[#FFFBF7] hover:bg-[#F5EFE6] transition-colors overflow-hidden ${isUploading ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
+                  {isUploading ? (
+                    <div className="flex flex-col items-center gap-2 text-[#A19183]">
+                      <div className="w-8 h-8 border-3 border-[#E8D5C4] border-t-[#B91C1C] rounded-full animate-spin"></div>
+                      <span className="text-xs font-bold">上傳中...</span>
+                    </div>
+                  ) : newPost.imgUrl ? (
                     <img src={newPost.imgUrl} alt="預覽" className="w-full h-full object-cover" />
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-[#A19183]">
