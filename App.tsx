@@ -260,12 +260,12 @@ const App = () => {
       <JapanesePattern />
 
       {/* Sidebar: 行程導航 */}
-      <aside className="w-full md:w-72 bg-[#FFFBF7] border-r border-[#E8D5C4] z-10 flex flex-col shadow-sm">
-        <div className="p-6 border-b border-[#E8D5C4] bg-white text-center">
-          <h1 className="text-xl font-bold text-[#B91C1C] flex items-center justify-center gap-2">
+      <aside className="w-full md:w-72 bg-[#FFFBF7] border-r border-[#E8D5C4] z-10 flex flex-col shadow-md">
+        <div className="p-6 border-b border-[#E8D5C4] bg-gradient-to-b from-white to-[#FFFBF7] text-center">
+          <h1 className="text-xl font-black text-[#B91C1C] flex items-center justify-center gap-2">
             <span className="text-2xl">⛩️</span> 來去走走一下
           </h1>
-          <p className="text-[10px] text-[#A19183] mt-1 tracking-widest uppercase">Travel Planner</p>
+          <p className="text-[10px] text-[#A19183] mt-1.5 tracking-widest uppercase font-medium">Travel Planner</p>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -303,18 +303,18 @@ const App = () => {
           ))}
         </div>
 
-        <div className="p-4 bg-[#F5EFE6] m-4 rounded-3xl space-y-2">
+        <div className="p-4 bg-gradient-to-br from-[#F5EFE6] to-[#FFEDED]/30 m-4 rounded-3xl space-y-2.5 border border-[#E8D5C4]/50">
           <div className="flex items-center justify-between text-[10px] font-bold text-[#8C7A6B]">
-            <span>行程數</span>
-            <span className="bg-white px-2 py-0.5 rounded-full text-[#B91C1C]">{trips.length}</span>
+            <span className="flex items-center gap-1.5"><Palmtree className="w-3 h-3 text-[#B91C1C]/60" />行程數</span>
+            <span className="bg-white px-2.5 py-0.5 rounded-full text-[#B91C1C] font-black shadow-sm">{trips.length}</span>
           </div>
           <div className="flex items-center justify-between text-[10px] font-bold text-[#8C7A6B]">
-            <span>討論項目</span>
-            <span className="bg-white px-2 py-0.5 rounded-full text-[#B91C1C]">{posts.length}</span>
+            <span className="flex items-center gap-1.5"><BarChart3 className="w-3 h-3 text-[#B91C1C]/60" />討論項目</span>
+            <span className="bg-white px-2.5 py-0.5 rounded-full text-[#B91C1C] font-black shadow-sm">{posts.length}</span>
           </div>
           <div className="flex items-center justify-between text-[10px] font-bold text-[#8C7A6B]">
-            <span>總投票數</span>
-            <span className="bg-white px-2 py-0.5 rounded-full text-[#B91C1C]">{posts.reduce((sum, p) => sum + (p.votes?.length || 0), 0)}</span>
+            <span className="flex items-center gap-1.5"><Heart className="w-3 h-3 text-[#B91C1C]/60" />總投票數</span>
+            <span className="bg-white px-2.5 py-0.5 rounded-full text-[#B91C1C] font-black shadow-sm">{posts.reduce((sum, p) => sum + (p.votes?.length || 0), 0)}</span>
           </div>
         </div>
       </aside>
@@ -323,20 +323,20 @@ const App = () => {
       <main className="flex-1 flex flex-col h-screen relative z-10 overflow-hidden">
         {currentTrip ? (
           <>
-            <header className="bg-white/80 backdrop-blur-md p-4 md:p-6 border-b border-[#E8D5C4] flex justify-between items-center">
+            <header className="bg-gradient-to-r from-white/90 to-[#FFFBF7]/90 backdrop-blur-lg p-4 md:p-6 border-b border-[#E8D5C4]/60 flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-black text-[#4A3E3E] flex items-center gap-2">
+                <h2 className="text-2xl font-black text-[#4A3E3E] flex items-center gap-3">
                   {currentTrip.name}
-                  <span className="text-[10px] bg-[#E8F3E8] text-[#2D5A27] px-2 py-1 rounded-full font-bold uppercase tracking-wider">Active</span>
+                  <span className="text-[10px] bg-gradient-to-r from-[#E8F3E8] to-[#D4EDDA] text-[#2D5A27] px-3 py-1 rounded-full font-black uppercase tracking-wider shadow-sm">Active</span>
                 </h2>
-                <div className="flex items-center gap-4 mt-1 text-xs text-[#8C7A6B] font-medium">
+                <div className="flex items-center gap-4 mt-1.5 text-xs text-[#8C7A6B] font-medium">
                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {currentTrip.location}</span>
                   <span className="flex items-center gap-1"><Calendar className="w-3 h-3"/> {currentTrip.startDate} ~ {currentTrip.endDate}</span>
                 </div>
               </div>
               <button
                 onClick={() => handleOpenPostModal()}
-                className="bg-[#B91C1C] text-white px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-red-200 hover:bg-red-700 transition-all active:scale-95"
+                className="bg-gradient-to-r from-[#B91C1C] to-[#DC2626] text-white px-6 py-2.5 rounded-full text-sm font-black flex items-center gap-2 shadow-lg shadow-red-200/60 hover:shadow-xl hover:shadow-red-300/60 hover:from-[#991B1B] hover:to-[#B91C1C] transition-all active:scale-95"
               >
                 <Plus className="w-4 h-4" /> 新增討論
               </button>
@@ -347,34 +347,36 @@ const App = () => {
                 const items = sortedPosts.filter(p => p.category === cat);
                 return (
                   <section key={cat}>
-                    <div className="flex items-center gap-2 mb-6">
-                      <div className="w-9 h-9 rounded-full bg-[#FFEDED] text-[#B91C1C] flex items-center justify-center shadow-sm border border-white">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#FFEDED] to-[#FFD1D1]/40 text-[#B91C1C] flex items-center justify-center shadow-sm border border-white">
                         <CategoryIcon type={cat} />
                       </div>
                       <h3 className="text-lg font-black text-[#4A3E3E] tracking-tight">{cat}</h3>
-                      <div className="flex-1 h-px bg-gradient-to-r from-[#E8D5C4] to-transparent ml-2"></div>
+                      <span className="text-[10px] font-bold text-[#A19183] bg-[#F5EFE6] px-2 py-0.5 rounded-full">{sortedPosts.filter(p => p.category === cat).length} 項</span>
+                      <div className="flex-1 h-px bg-gradient-to-r from-[#E8D5C4] to-transparent ml-1"></div>
                     </div>
 
                     {items.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {items.map(post => (
-                          <div key={post.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-[#E8D5C4] group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                            <div className="h-40 bg-[#F5EFE6] relative overflow-hidden">
+                          <div key={post.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-[#E8D5C4]/80 group hover:shadow-2xl hover:shadow-[#E8D5C4]/30 hover:-translate-y-1.5 transition-all duration-300">
+                            <div className="h-44 bg-gradient-to-br from-[#F5EFE6] to-[#FFEDED]/30 relative overflow-hidden">
                               <img
                                 src={post.imgUrl || `https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=400`}
                                 alt={post.title}
-                                className="w-full h-full object-cover grayscale-[20%] group-hover:grayscale-0 transition-all duration-500"
+                                className="w-full h-full object-cover grayscale-[15%] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
                               />
-                              <div className="absolute top-3 right-3 bg-white/95 backdrop-blur px-3 py-1.5 rounded-2xl text-[10px] font-black shadow-sm flex items-center gap-1.5 text-[#B91C1C]">
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-2xl text-[10px] font-black shadow-md flex items-center gap-1.5 text-[#B91C1C]">
                                 <Heart className="w-3 h-3 fill-current" /> {post.votes.length} 票
                               </div>
                             </div>
                             <div className="p-5">
-                              <h4 className="font-bold text-lg text-[#2D2424] mb-1">{post.title}</h4>
+                              <h4 className="font-black text-lg text-[#2D2424] mb-1">{post.title}</h4>
                               <p className="text-[11px] text-[#A19183] flex items-center gap-1 mb-3">
                                 <MapPin className="w-3 h-3" /> {post.location || '尚未設定地點'}
                               </p>
-                              <div className="bg-[#FFFBF7] p-3 rounded-2xl border border-[#F5EFE6] mb-5 min-h-[60px]">
+                              <div className="bg-gradient-to-br from-[#FFFBF7] to-[#F5EFE6]/50 p-3.5 rounded-2xl border border-[#F5EFE6] mb-5 min-h-[60px]">
                                 <p className="text-sm text-[#6D5D5D] leading-relaxed italic line-clamp-2">「{post.description || '暫無說明內容'}」</p>
                               </div>
 
@@ -421,7 +423,7 @@ const App = () => {
                                   </button>
                                   <button
                                     onClick={() => { setVotingPostId(post.id); setIsVoteModalOpen(true); }}
-                                    className="text-[11px] font-black text-[#B91C1C] px-4 py-2 bg-[#FFEDED] rounded-full hover:bg-[#B91C1C] hover:text-white transition-all shadow-sm active:scale-90"
+                                    className="text-[11px] font-black text-[#B91C1C] px-4 py-2 bg-gradient-to-r from-[#FFEDED] to-[#FFD1D1]/50 rounded-full hover:from-[#B91C1C] hover:to-[#DC2626] hover:text-white transition-all shadow-sm hover:shadow-md hover:shadow-red-200/50 active:scale-90"
                                   >
                                     點我投票
                                   </button>
@@ -432,8 +434,10 @@ const App = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-10 border-2 border-dashed border-[#E8D5C4] rounded-[2.5rem] text-[#A19183] text-sm bg-white/50">
-                         快點擊右上角新增第一個{cat}吧！🌸
+                      <div className="text-center py-12 border-2 border-dashed border-[#E8D5C4]/60 rounded-[2.5rem] text-[#A19183] text-sm bg-gradient-to-br from-white/60 to-[#FFFBF7]/60">
+                        <div className="text-3xl mb-3 opacity-30"><CategoryIcon type={cat} /></div>
+                        <p className="font-bold">還沒有{cat}建議</p>
+                        <p className="text-[11px] mt-1 opacity-70">點擊右上角新增第一個{cat}吧</p>
                       </div>
                     )}
                   </section>
@@ -443,14 +447,17 @@ const App = () => {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-[#A19183] p-8 text-center">
-            <div className="text-9xl mb-8 opacity-10 animate-pulse">💮</div>
-            <h2 className="text-2xl font-black text-[#4A3E3E] mb-3 tracking-tighter">開始規劃你的日本冒險</h2>
-            <p className="max-w-xs text-sm leading-relaxed mb-8">請在左側選擇一個旅程，或點擊上方「+」號建立新的探索計畫。</p>
+            <div className="relative mb-10">
+              <div className="text-8xl opacity-10">⛩️</div>
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-transparent via-[#B91C1C]/20 to-transparent rounded-full"></div>
+            </div>
+            <h2 className="text-2xl font-black text-[#4A3E3E] mb-3 tracking-tighter">開始規劃你的旅行冒險</h2>
+            <p className="max-w-sm text-sm leading-relaxed mb-10 text-[#8C7A6B]">請在左側選擇一個旅程，或點擊下方按鈕建立新的探索計畫。</p>
             <button
                 onClick={() => setIsTripModalOpen(true)}
-                className="px-8 py-4 bg-[#B91C1C] text-white rounded-full font-black shadow-2xl shadow-red-200 flex items-center gap-3 hover:scale-105 transition-all"
+                className="px-8 py-4 bg-gradient-to-r from-[#B91C1C] to-[#DC2626] text-white rounded-full font-black shadow-2xl shadow-red-200/60 flex items-center gap-3 hover:scale-105 hover:shadow-red-300/60 transition-all"
             >
-                <Plus className="w-6 h-6" /> 立即建立新行程
+                <Plus className="w-5 h-5" /> 立即建立新行程
             </button>
           </div>
         )}
@@ -496,9 +503,9 @@ const App = () => {
                 </div>
               </div>
             </div>
-            <div className="p-8 bg-gray-50 flex gap-4">
-              <button onClick={() => setIsTripModalOpen(false)} className="flex-1 py-4 text-[#A19183] font-bold text-sm">取消</button>
-              <button onClick={handleAddTrip} className="flex-1 py-4 bg-[#B91C1C] text-white rounded-2xl font-black shadow-xl shadow-red-100">確認建立</button>
+            <div className="p-8 bg-gradient-to-t from-gray-50 to-white flex gap-4">
+              <button onClick={() => setIsTripModalOpen(false)} className="flex-1 py-4 text-[#A19183] font-bold text-sm hover:text-[#4A3E3E] transition-colors">取消</button>
+              <button onClick={handleAddTrip} className="flex-1 py-4 bg-gradient-to-r from-[#B91C1C] to-[#DC2626] text-white rounded-2xl font-black shadow-xl shadow-red-100 hover:shadow-red-200 transition-all active:scale-95">確認建立</button>
             </div>
           </div>
         </div>
@@ -575,9 +582,9 @@ const App = () => {
                 </div>
               </div>
             </div>
-            <div className="p-8 bg-gray-50 flex gap-4">
-              <button onClick={handleClosePostModal} className="flex-1 py-4 text-[#A19183] font-bold text-sm">取消</button>
-              <button onClick={handleSavePost} className="flex-1 py-4 bg-[#B91C1C] text-white rounded-2xl font-black shadow-xl shadow-red-100">
+            <div className="p-8 bg-gradient-to-t from-gray-50 to-white flex gap-4">
+              <button onClick={handleClosePostModal} className="flex-1 py-4 text-[#A19183] font-bold text-sm hover:text-[#4A3E3E] transition-colors">取消</button>
+              <button onClick={handleSavePost} className="flex-1 py-4 bg-gradient-to-r from-[#B91C1C] to-[#DC2626] text-white rounded-2xl font-black shadow-xl shadow-red-100 hover:shadow-red-200 transition-all active:scale-95">
                 {editingPostId ? '儲存變更' : '發布建議'}
               </button>
             </div>
@@ -601,7 +608,7 @@ const App = () => {
               onKeyDown={e => e.key === 'Enter' && handleVote()}
             />
             <div className="flex flex-col gap-3">
-              <button onClick={handleVote} className="w-full py-4 bg-[#B91C1C] text-white rounded-2xl font-black text-sm shadow-xl shadow-red-100 active:scale-95 transition-all">投下神聖一票</button>
+              <button onClick={handleVote} className="w-full py-4 bg-gradient-to-r from-[#B91C1C] to-[#DC2626] text-white rounded-2xl font-black text-sm shadow-xl shadow-red-100 hover:shadow-red-200 active:scale-95 transition-all">投下神聖一票</button>
               <button onClick={() => { setIsVoteModalOpen(false); setVoterName(''); }} className="w-full py-2 text-[#A19183] font-bold text-xs">取消</button>
             </div>
           </div>
@@ -610,19 +617,22 @@ const App = () => {
 
       {/* --- 全螢幕 Loading 遮罩 --- */}
       {isLoading && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-[2rem] p-8 shadow-2xl flex flex-col items-center gap-4 min-w-[200px]">
-            <div className="w-12 h-12 border-4 border-[#E8D5C4] border-t-[#B91C1C] rounded-full animate-spin"></div>
-            <span className="text-sm font-bold text-[#4A3E3E]">{loadingText}</span>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-md">
+          <div className="bg-white/95 backdrop-blur rounded-[2rem] p-10 shadow-2xl flex flex-col items-center gap-5 min-w-[220px] border border-[#E8D5C4]/50">
+            <div className="relative">
+              <div className="w-14 h-14 border-4 border-[#F5EFE6] border-t-[#B91C1C] rounded-full animate-spin"></div>
+              <div className="absolute inset-0 flex items-center justify-center text-lg">⛩️</div>
+            </div>
+            <span className="text-sm font-black text-[#4A3E3E] tracking-wide">{loadingText}</span>
           </div>
         </div>
       )}
 
       {/* 底部裝飾 */}
-      <div className="fixed bottom-6 right-6 pointer-events-none hidden md:block">
-        <div className="flex items-center gap-3 bg-white/90 backdrop-blur px-4 py-2 rounded-full border border-[#E8D5C4] shadow-lg">
-          <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse shadow-sm shadow-red-400"></div>
-          <span className="text-[10px] font-black text-[#4A3E3E] tracking-widest uppercase">Traveler Edition v2.0</span>
+      <div className="fixed bottom-5 right-5 pointer-events-none hidden md:block">
+        <div className="flex items-center gap-2.5 bg-white/80 backdrop-blur-lg px-4 py-2 rounded-full border border-[#E8D5C4]/60 shadow-lg">
+          <div className="w-2 h-2 bg-gradient-to-r from-red-500 to-red-600 rounded-full animate-pulse shadow-sm shadow-red-400"></div>
+          <span className="text-[10px] font-black text-[#4A3E3E] tracking-widest uppercase">來去走走 v2.0</span>
         </div>
       </div>
     </div>
