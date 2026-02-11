@@ -1,4 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { db } from './firebase';
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  where,
+  getDocs,
+  arrayUnion
+} from 'firebase/firestore';
 import {
   Palmtree,
   MapPin,
@@ -37,7 +50,7 @@ const CategoryIcon = ({ type }: { type: string }) => {
 };
 
 interface Trip {
-  id: number;
+  id: string;
   name: string;
   location: string;
   startDate: string;
@@ -45,8 +58,8 @@ interface Trip {
 }
 
 interface PostItem {
-  id: number;
-  tripId: number;
+  id: string;
+  tripId: string;
   category: string;
   title: string;
   location: string;
@@ -57,28 +70,44 @@ interface PostItem {
 }
 
 const App = () => {
-  // --- 資料狀態 ---
-  const [trips, setTrips] = useState<Trip[]>([
-    { id: 1, name: '2025北海道粉雪團', location: '二世谷', startDate: '2025-01-15', endDate: '2025-01-20' }
-  ]);
-  const [posts, setPosts] = useState<PostItem[]>([
-    { id: 101, tripId: 1, category: '住宿', title: '二世谷希爾頓', location: '二世谷村', description: '這家可以直接 Ski-in Ski-out，非常方便！', imgUrl: 'https://images.unsplash.com/photo-1542132715-668045610817?auto=format&fit=crop&q=80&w=400', linkUrl: 'https://www.hilton.com', votes: ['小明', '雅婷'] },
-    { id: 102, tripId: 1, category: '飲食', title: 'Raku 湯咖哩', location: '二世谷', description: '滑完雪吃這個超讚，雞腿很嫩。', imgUrl: 'https://images.unsplash.com/photo-1563127670-4235fd223d6a?auto=format&fit=crop&q=80&w=400', linkUrl: '', votes: ['小華'] }
-  ]);
+  // --- 資料狀態 (Firestore 同步) ---
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [posts, setPosts] = useState<PostItem[]>([]);
 
   // --- UI 狀態 ---
-  const [selectedTripId, setSelectedTripId] = useState<number | null>(1);
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [isTripModalOpen, setIsTripModalOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isVoteModalOpen, setIsVoteModalOpen] = useState(false);
-  const [votingPostId, setVotingPostId] = useState<number | null>(null);
+  const [votingPostId, setVotingPostId] = useState<string | null>(null);
   const [voterName, setVoterName] = useState('');
-  const [editingPostId, setEditingPostId] = useState<number | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
 
   // 新行程表單
   const [newTrip, setNewTrip] = useState({ name: '', location: '', startDate: '', endDate: '' });
   // 新項目表單
   const [newPost, setNewPost] = useState({ category: '住宿', title: '', location: '', description: '', imgUrl: '', linkUrl: '' });
+
+  // --- Firestore 即時監聽 ---
+  useEffect(() => {
+    const unsubTrips = onSnapshot(collection(db, 'trips'), (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Trip));
+      setTrips(data);
+      // 自動選第一個行程
+      if (data.length > 0 && !selectedTripId) {
+        setSelectedTripId(data[0].id);
+      }
+    });
+    return () => unsubTrips();
+  }, []);
+
+  useEffect(() => {
+    const unsubPosts = onSnapshot(collection(db, 'posts'), (snapshot) => {
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as PostItem));
+      setPosts(data);
+    });
+    return () => unsubPosts();
+  }, []);
 
   const currentTrip = trips.find(t => t.id === selectedTripId);
   const currentPosts = posts.filter(p => p.tripId === selectedTripId);
@@ -89,22 +118,29 @@ const App = () => {
   }, [currentPosts]);
 
   // --- 邏輯操作 ---
-  const handleAddTrip = () => {
+  const handleAddTrip = async () => {
     if (!newTrip.name || !newTrip.location) return;
-    const trip: Trip = { ...newTrip, id: Date.now() };
-    setTrips([...trips, trip]);
-    setSelectedTripId(trip.id);
+    const docRef = await addDoc(collection(db, 'trips'), {
+      name: newTrip.name,
+      location: newTrip.location,
+      startDate: newTrip.startDate,
+      endDate: newTrip.endDate,
+    });
+    setSelectedTripId(docRef.id);
     setIsTripModalOpen(false);
     setNewTrip({ name: '', location: '', startDate: '', endDate: '' });
   };
 
-  const handleDeleteTrip = (id: number) => {
-    setTrips(trips.filter(t => t.id !== id));
-    setPosts(posts.filter(p => p.tripId !== id));
+  const handleDeleteTrip = async (id: string) => {
+    await deleteDoc(doc(db, 'trips', id));
+    // 刪除該行程下的所有討論
+    const q = query(collection(db, 'posts'), where('tripId', '==', id));
+    const snapshot = await getDocs(q);
+    snapshot.docs.forEach(d => deleteDoc(doc(db, 'posts', d.id)));
     if (selectedTripId === id) setSelectedTripId(null);
   };
 
-  const handleOpenPostModal = (postId?: number) => {
+  const handleOpenPostModal = (postId?: string) => {
     if (postId) {
       const post = posts.find(p => p.id === postId);
       if (post) {
@@ -134,29 +170,44 @@ const App = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSavePost = () => {
+  const handleSavePost = async () => {
     if (!newPost.title) return;
     if (editingPostId) {
-      setPosts(posts.map(p => p.id === editingPostId ? { ...p, ...newPost } : p));
+      await updateDoc(doc(db, 'posts', editingPostId), {
+        category: newPost.category,
+        title: newPost.title,
+        location: newPost.location,
+        description: newPost.description,
+        imgUrl: newPost.imgUrl,
+        linkUrl: newPost.linkUrl,
+      });
     } else {
-      const post: PostItem = { ...newPost, id: Date.now(), tripId: selectedTripId!, votes: [] };
-      setPosts([...posts, post]);
+      await addDoc(collection(db, 'posts'), {
+        tripId: selectedTripId,
+        category: newPost.category,
+        title: newPost.title,
+        location: newPost.location,
+        description: newPost.description,
+        imgUrl: newPost.imgUrl,
+        linkUrl: newPost.linkUrl,
+        votes: [],
+      });
     }
     handleClosePostModal();
   };
 
-  const handleDeletePost = (id: number) => {
-    setPosts(posts.filter(p => p.id !== id));
+  const handleDeletePost = async (id: string) => {
+    await deleteDoc(doc(db, 'posts', id));
   };
 
-  const handleVote = () => {
+  const handleVote = async () => {
     if (!voterName || !votingPostId) return;
-    setPosts(posts.map(p => {
-      if (p.id === votingPostId && !p.votes.includes(voterName)) {
-        return { ...p, votes: [...p.votes, voterName] };
-      }
-      return p;
-    }));
+    const post = posts.find(p => p.id === votingPostId);
+    if (post && !post.votes.includes(voterName)) {
+      await updateDoc(doc(db, 'posts', votingPostId), {
+        votes: arrayUnion(voterName),
+      });
+    }
     setIsVoteModalOpen(false);
     setVoterName('');
   };
