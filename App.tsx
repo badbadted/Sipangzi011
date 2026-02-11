@@ -303,9 +303,18 @@ const App = () => {
           ))}
         </div>
 
-        <div className="p-4 bg-[#F5EFE6] m-4 rounded-3xl">
-          <div className="grid grid-cols-4 gap-2 text-xl justify-items-center opacity-60">
-            <span>🍣</span><span>🍡</span><span>🍵</span><span>🦊</span>
+        <div className="p-4 bg-[#F5EFE6] m-4 rounded-3xl space-y-2">
+          <div className="flex items-center justify-between text-[10px] font-bold text-[#8C7A6B]">
+            <span>行程數</span>
+            <span className="bg-white px-2 py-0.5 rounded-full text-[#B91C1C]">{trips.length}</span>
+          </div>
+          <div className="flex items-center justify-between text-[10px] font-bold text-[#8C7A6B]">
+            <span>討論項目</span>
+            <span className="bg-white px-2 py-0.5 rounded-full text-[#B91C1C]">{posts.length}</span>
+          </div>
+          <div className="flex items-center justify-between text-[10px] font-bold text-[#8C7A6B]">
+            <span>總投票數</span>
+            <span className="bg-white px-2 py-0.5 rounded-full text-[#B91C1C]">{posts.reduce((sum, p) => sum + (p.votes?.length || 0), 0)}</span>
           </div>
         </div>
       </aside>
