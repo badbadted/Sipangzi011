@@ -88,23 +88,30 @@ const App = () => {
   // 新項目表單
   const [newPost, setNewPost] = useState({ category: '住宿', title: '', location: '', description: '', imgUrl: '', linkUrl: '' });
 
-  // --- Firestore 即時監聽 ---
+  // --- Firestore 即時監聯 ---
   useEffect(() => {
+    console.log('[App] 開始監聽 trips, db:', db);
     const unsubTrips = onSnapshot(collection(db, 'trips'), (snapshot) => {
+      console.log('[Firestore] trips:', snapshot.docs.length, '筆資料');
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Trip));
       setTrips(data);
       // 自動選第一個行程
       if (data.length > 0 && !selectedTripId) {
         setSelectedTripId(data[0].id);
       }
+    }, (error) => {
+      console.error('[Firestore] trips 監聽錯誤:', error);
     });
     return () => unsubTrips();
   }, []);
 
   useEffect(() => {
     const unsubPosts = onSnapshot(collection(db, 'posts'), (snapshot) => {
+      console.log('[Firestore] posts:', snapshot.docs.length, '筆資料');
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as PostItem));
       setPosts(data);
+    }, (error) => {
+      console.error('[Firestore] posts 監聽錯誤:', error);
     });
     return () => unsubPosts();
   }, []);
@@ -120,15 +127,21 @@ const App = () => {
   // --- 邏輯操作 ---
   const handleAddTrip = async () => {
     if (!newTrip.name || !newTrip.location) return;
-    const docRef = await addDoc(collection(db, 'trips'), {
-      name: newTrip.name,
-      location: newTrip.location,
-      startDate: newTrip.startDate,
-      endDate: newTrip.endDate,
-    });
-    setSelectedTripId(docRef.id);
-    setIsTripModalOpen(false);
-    setNewTrip({ name: '', location: '', startDate: '', endDate: '' });
+    try {
+      const docRef = await addDoc(collection(db, 'trips'), {
+        name: newTrip.name,
+        location: newTrip.location,
+        startDate: newTrip.startDate,
+        endDate: newTrip.endDate,
+      });
+      console.log('[Firestore] 行程已寫入, ID:', docRef.id);
+      setSelectedTripId(docRef.id);
+      setIsTripModalOpen(false);
+      setNewTrip({ name: '', location: '', startDate: '', endDate: '' });
+    } catch (err) {
+      console.error('[Firestore] 寫入行程失敗:', err);
+      alert('寫入失敗: ' + (err as Error).message);
+    }
   };
 
   const handleDeleteTrip = async (id: string) => {
