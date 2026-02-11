@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { db, storage } from './firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from './firebase';
 import {
   collection,
   addDoc,
@@ -166,19 +165,19 @@ const App = () => {
     setNewPost({ category: '住宿', title: '', location: '', description: '', imgUrl: '', linkUrl: '' });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
-    try {
-      const storageRef = ref(storage, `images/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      setNewPost(prev => ({ ...prev, imgUrl: url }));
-    } catch (err) {
-      // silent
-    }
-    setIsUploading(false);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setNewPost(prev => ({ ...prev, imgUrl: reader.result as string }));
+      setIsUploading(false);
+    };
+    reader.onerror = () => {
+      setIsUploading(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSavePost = async () => {
